@@ -64,7 +64,7 @@ if 0 == len(tests):
     for root, dirs, files in os.walk(args.proto_home):
         for file in files:
             absolute_path = os.path.join(root, file)
-            if os.path.splitext(absolute_path)[1] == '.yaml':
+            if os.path.splitext(absolute_path)[1] == '.json':
                 if os.path.isfile(os.path.splitext(absolute_path)[0] + '.bin'):
                     tests.append(os.path.splitext(os.path.relpath(absolute_path, args.proto_home))[0])
 
@@ -86,17 +86,17 @@ for test in tests:
     failed = False
 
     golden_bin_file = os.path.join(args.proto_home, test) + '.bin'
-    golden_yaml_file = os.path.join(args.proto_home, test) + '.yaml'
+    golden_json_file = os.path.join(args.proto_home, test) + '.json'
 
     # Put sub-directories' output in a matching tree.
     sub_directory = os.path.join(os.getcwd(), os.path.dirname(test))
     if sub_directory and not os.path.exists(sub_directory):
         os.makedirs(sub_directory)
     actual_bin_file = os.path.join(os.getcwd(), test) + '.bin'
-    actual_yaml_file = os.path.join(os.getcwd(), test) + '.yaml'
+    actual_json_file = os.path.join(os.getcwd(), test) + '.json'
 
     # Test the binary file.
-    subprocess.call(args.test_driver + ' ' + golden_yaml_file + ' ' + actual_bin_file, shell=True)
+    subprocess.call(args.test_driver + ' ' + golden_json_file + ' ' + actual_bin_file, shell=True)
     golden_contents = file_to_hex_string(golden_bin_file)
     actual_contents = file_to_hex_string(actual_bin_file)
     seq = difflib.SequenceMatcher(None, golden_contents, actual_contents)
@@ -125,12 +125,12 @@ for test in tests:
 
         curr += 1
 
-    # Test the YAML file.
-    subprocess.call(args.test_driver + ' ' + golden_bin_file + ' ' + actual_yaml_file, shell=True)
-    diffs = difflib.unified_diff([line.rstrip('\n') for line in open(golden_yaml_file)],
-                                  [line.rstrip('\n') for line in open(actual_yaml_file)],
-                                  fromfile=golden_yaml_file,
-                                  tofile=actual_yaml_file,
+    # Test the JSON file.
+    subprocess.call(args.test_driver + ' ' + golden_bin_file + ' ' + actual_json_file, shell=True)
+    diffs = difflib.unified_diff([line.rstrip('\n') for line in open(golden_json_file)],
+                                  [line.rstrip('\n') for line in open(actual_json_file)],
+                                  fromfile=golden_json_file,
+                                  tofile=actual_json_file,
                                   lineterm='',
                                   n=0)
     for diff in diffs:
