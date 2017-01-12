@@ -28,7 +28,7 @@ if not os.access(args.test_driver, os.X_OK):
     print('{0} is not executable.'.format(args.test_driver))
     sys.exit(1)
 
-tests = args.tests
+tests = args.tests if args.tests else []
 if 0 == len(tests):
     # Find all the tests for the protocol.
     for root, dirs, files in os.walk(args.proto_home):
@@ -67,26 +67,41 @@ for test in tests:
 
     # Test the binary file.
     subprocess.call(args.test_driver + ' ' + golden_yaml_file + ' ' + actual_bin_file, shell=True)
+    # TODO Convert binary into hexadecimal strings.
     golden_contents = open(golden_bin_file, 'r').read()
     actual_contents = open(actual_bin_file, 'r').read()
-    print('golden="{0}"'.format(golden_contents))
-    print('actual="{0}"'.format(actual_contents))
+    # print('golden="{0}"'.format(golden_contents))
+    # print('actual="{0}"'.format(actual_contents))
     seq = difflib.SequenceMatcher(None, golden_contents, actual_contents)
     matches = seq.get_matching_blocks()
     if 2 < len(matches):
         failed = True
         print('--- {0}'.format(golden_bin_file))
         print('+++ {0}'.format(actual_bin_file))
-    for i, j, n in matches:
-        if 0 == n:
-            break
-        print('i={0} j={1} n={2}'.format(i, j, n))
-        if i < j:
-            print('@@ {0},{1} @@'.format(i, j - i))
-            print ('+ {0}'.format(actual_contents[i : j]))
-        elif j < i:
-            print('@@ {0},{1} @@'.format(j, i - j))
-            print ('- {0}'.format(golden_contents[j : i]))
+    curr = 0
+    while curr < len(matches) - 1:
+        i, j, n = matches[curr]
+        # print('index={0} i={1} j={2} n={3}'.format(curr, i, j, n))
+        if i != j:
+            next = curr + 1
+            while next < len(matches) - 1 and matches[next][0] != matches[next][1]:
+                next += 1
+            start = i if i < j else j
+            finish = matches[next][0]
+            print('@@ {0},{1} @@'.format(start, finish - start))
+            print('+' + golden_contents[start : finish])
+            print('-' + actual_contents[start : finish])
+        curr += 1
+    # for i, j, n in matches:
+    #     if 0 == n:
+    #         break
+    #     print('i={0} j={1} n={2}'.format(i, j, n))
+    #     if i < j:
+    #         print('@@ {0},{1} @@'.format(i, j - i))
+    #         print ('+ {0}'.format(actual_contents[i : j]))
+    #     elif j < i:
+    #         print('@@ {0},{1} @@'.format(j, i - j))
+    #         print ('- {0}'.format(golden_contents[j : i]))
 
     # Test the YAML file.
     subprocess.call(args.test_driver + ' ' + golden_bin_file + ' ' + actual_yaml_file, shell=True)
