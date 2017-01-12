@@ -127,14 +127,14 @@ for test in tests:
 
     # Test the JSON file.
     subprocess.call(args.test_driver + ' ' + golden_bin_file + ' ' + actual_json_file, shell=True)
-    diffs = difflib.unified_diff([line.rstrip('\n') for line in open(golden_json_file)],
-                                  [line.rstrip('\n') for line in open(actual_json_file)],
-                                  fromfile=golden_json_file,
-                                  tofile=actual_json_file,
-                                  lineterm='',
-                                  n=0)
-    for diff in diffs:
-        failed = True
-        print diff
+    # diffs = difflib.unified_diff([line.rstrip('\n') for line in open(golden_json_file)],
+    #                               [line.rstrip('\n') for line in open(actual_json_file)],
+    #                               fromfile=golden_json_file,
+    #                               tofile=actual_json_file,
+    #                               lineterm='',
+    #                               n=0)
+    # for diff in diffs:
+    #     failed = True
+    #     print diff
 
     print('{0}: {1}'.format(test.rjust(max), 'FAIL' if failed else 'PASS'))
