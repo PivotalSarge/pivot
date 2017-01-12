@@ -6,6 +6,15 @@ import os
 import subprocess
 import sys
 
+def file_to_hex_string(path):
+    str = ''
+    with open(path, 'rb') as f:
+        byte = f.read(1)
+        while byte:
+            str += '{:02x}'.format(ord(byte[0]))
+            byte = f.read(1)
+    return str
+
 parser = argparse.ArgumentParser(description='Protocol Input Vs. Output Tester')
 parser.add_argument('--pivot_home', default=os.path.dirname(os.path.realpath(__file__)), help='Home of pivot')
 parser.add_argument('--proto_home', default=os.path.dirname(os.path.realpath(__file__)), help='Home of protocol')
@@ -67,17 +76,16 @@ for test in tests:
 
     # Test the binary file.
     subprocess.call(args.test_driver + ' ' + golden_yaml_file + ' ' + actual_bin_file, shell=True)
-    # TODO Convert binary into hexadecimal strings.
-    golden_contents = open(golden_bin_file, 'r').read()
-    actual_contents = open(actual_bin_file, 'r').read()
-    # print('golden="{0}"'.format(golden_contents))
-    # print('actual="{0}"'.format(actual_contents))
+    golden_contents = file_to_hex_string(golden_bin_file)
+    actual_contents = file_to_hex_string(actual_bin_file)
     seq = difflib.SequenceMatcher(None, golden_contents, actual_contents)
     matches = seq.get_matching_blocks()
     if 2 < len(matches):
         failed = True
         print('--- {0}'.format(golden_bin_file))
         print('+++ {0}'.format(actual_bin_file))
+        # print('golden="{0}"'.format(golden_contents))
+        # print('actual="{0}"'.format(actual_contents))
     curr = 0
     while curr < len(matches) - 1:
         i, j, n = matches[curr]
@@ -92,16 +100,6 @@ for test in tests:
             print('+' + golden_contents[start : finish])
             print('-' + actual_contents[start : finish])
         curr += 1
-    # for i, j, n in matches:
-    #     if 0 == n:
-    #         break
-    #     print('i={0} j={1} n={2}'.format(i, j, n))
-    #     if i < j:
-    #         print('@@ {0},{1} @@'.format(i, j - i))
-    #         print ('+ {0}'.format(actual_contents[i : j]))
-    #     elif j < i:
-    #         print('@@ {0},{1} @@'.format(j, i - j))
-    #         print ('- {0}'.format(golden_contents[j : i]))
 
     # Test the YAML file.
     subprocess.call(args.test_driver + ' ' + golden_bin_file + ' ' + actual_yaml_file, shell=True)
