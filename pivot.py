@@ -15,6 +15,27 @@ def file_to_hex_string(path):
             byte = f.read(1)
     return str
 
+def enforce_byte_boundaries(i, j, n):
+    # print('i={0} j={1} n={2}'.format(i, j, n))
+    golden_idx = i
+    golden_len = n
+    if 0 != (golden_idx % 2):
+        golden_idx -= 1
+        golden_len += 1
+    if 0 != (golden_len % 2):
+        golden_len -= 1
+
+    actual_idx = j
+    actual_len = n
+    if 0 != (actual_idx % 2):
+        actual_idx -= 1
+        actual_len += 1
+    if 0 != (actual_len % 2):
+        actual_len -= 1
+
+    # print('gi={0} gl={1} ai={2} al={3}'.format(golden_idx, golden_len, actual_idx, actual_len))
+    return golden_idx, golden_len, actual_idx, actual_len
+
 parser = argparse.ArgumentParser(description='Protocol Input Vs. Output Tester')
 parser.add_argument('--pivot_home', default=os.path.dirname(os.path.realpath(__file__)), help='Home of pivot')
 parser.add_argument('--proto_home', default=os.path.dirname(os.path.realpath(__file__)), help='Home of protocol')
@@ -86,19 +107,22 @@ for test in tests:
         print('+++ {0}'.format(actual_bin_file))
         # print('golden="{0}"'.format(golden_contents))
         # print('actual="{0}"'.format(actual_contents))
+    golden_pos = 0
+    actual_pos = 0
     curr = 0
-    while curr < len(matches) - 1:
-        i, j, n = matches[curr]
-        # print('index={0} i={1} j={2} n={3}'.format(curr, i, j, n))
-        if i != j:
-            next = curr + 1
-            while next < len(matches) - 1 and matches[next][0] != matches[next][1]:
-                next += 1
-            start = i if i < j else j
-            finish = matches[next][0]
-            print('@@ {0},{1} @@'.format(start, finish - start))
-            print('+' + golden_contents[start : finish])
-            print('-' + actual_contents[start : finish])
+    while curr < len(matches):
+        golden_idx, golden_len, actual_idx, actual_len = enforce_byte_boundaries(matches[curr][0], matches[curr][1], matches[curr][2])
+
+        if golden_pos < golden_idx:
+            print('@@ {0},{1} @@'.format(golden_pos, golden_idx - golden_pos))
+            print('+' + golden_contents[golden_pos : golden_idx])
+        golden_pos = golden_idx + golden_len
+
+        if actual_pos < actual_idx:
+            print('@@ {0},{1} @@'.format(actual_pos, actual_idx - actual_pos))
+            print('-' + actual_contents[actual_pos : actual_idx])
+        actual_pos = actual_idx + actual_len
+
         curr += 1
 
     # Test the YAML file.
