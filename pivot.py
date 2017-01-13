@@ -97,10 +97,7 @@ for test in tests:
 
     # Test the binary file.
     subprocess.call(args.test_driver + ' ' + golden_json_file + ' ' + actual_bin_file, shell=True)
-    if not os.path.exists(actual_bin_file):
-        failed = True
-        print('Missing file: {0}'.format(actual_bin_file))
-    else:
+    if os.path.exists(actual_bin_file):
         golden_contents = file_to_hex_string(golden_bin_file)
         actual_contents = file_to_hex_string(actual_bin_file)
         seq = difflib.SequenceMatcher(None, golden_contents, actual_contents)
@@ -131,10 +128,7 @@ for test in tests:
 
     # Test the JSON file.
     subprocess.call(args.test_driver + ' ' + golden_bin_file + ' ' + actual_json_file, shell=True)
-    if not os.path.exists(actual_json_file):
-        failed = True
-        print('Missing file: {0}'.format(actual_json_file))
-    else:
+    if os.path.exists(actual_json_file):
         diffs = difflib.unified_diff([line.rstrip('\n') for line in open(golden_json_file)],
                                       [line.rstrip('\n') for line in open(actual_json_file)],
                                       fromfile=golden_json_file,
