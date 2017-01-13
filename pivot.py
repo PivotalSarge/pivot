@@ -40,7 +40,7 @@ parser = argparse.ArgumentParser(description='Protocol Input Vs. Output Tester')
 parser.add_argument('--pivot_home', default=os.path.dirname(os.path.realpath(__file__)), help='Home of pivot')
 parser.add_argument('--proto_home', default=os.path.dirname(os.path.realpath(__file__)), help='Home of protocol')
 parser.add_argument('--tests', nargs='+', help='Names of tests to run')
-parser.add_argument('test_driver', help='Path to test driver executable')
+parser.add_argument('--test_driver', default=os.path.join(os.path.dirname(os.path.realpath(__file__)), 'dummy.sh'), help='Path to test driver executable')
 args = parser.parse_args()
 
 if not os.path.isdir(args.pivot_home):
@@ -97,44 +97,52 @@ for test in tests:
 
     # Test the binary file.
     subprocess.call(args.test_driver + ' ' + golden_json_file + ' ' + actual_bin_file, shell=True)
-    golden_contents = file_to_hex_string(golden_bin_file)
-    actual_contents = file_to_hex_string(actual_bin_file)
-    seq = difflib.SequenceMatcher(None, golden_contents, actual_contents)
-    matches = seq.get_matching_blocks()
-    if 2 < len(matches):
+    if not os.path.exists(actual_bin_file):
         failed = True
-        print('--- {0}'.format(golden_bin_file))
-        print('+++ {0}'.format(actual_bin_file))
-        # print('golden="{0}"'.format(golden_contents))
-        # print('actual="{0}"'.format(actual_contents))
-    golden_pos = 0
-    actual_pos = 0
-    curr = 0
-    while curr < len(matches):
-        golden_idx, golden_len, actual_idx, actual_len = enforce_byte_boundaries(matches[curr][0], matches[curr][1], matches[curr][2])
+        print('Missing file: {0}'.format(actual_bin_file))
+    else:
+        golden_contents = file_to_hex_string(golden_bin_file)
+        actual_contents = file_to_hex_string(actual_bin_file)
+        seq = difflib.SequenceMatcher(None, golden_contents, actual_contents)
+        matches = seq.get_matching_blocks()
+        if 2 < len(matches):
+            failed = True
+            print('--- {0}'.format(golden_bin_file))
+            print('+++ {0}'.format(actual_bin_file))
+            # print('golden="{0}"'.format(golden_contents))
+            # print('actual="{0}"'.format(actual_contents))
+        golden_pos = 0
+        actual_pos = 0
+        curr = 0
+        while curr < len(matches):
+            golden_idx, golden_len, actual_idx, actual_len = enforce_byte_boundaries(matches[curr][0], matches[curr][1], matches[curr][2])
 
-        if golden_pos < golden_idx:
-            print('@@ {0},{1} @@'.format(golden_pos, golden_idx - golden_pos))
-            print('+' + golden_contents[golden_pos : golden_idx])
-        golden_pos = golden_idx + golden_len
+            if golden_pos < golden_idx:
+                print('@@ {0},{1} @@'.format(golden_pos, golden_idx - golden_pos))
+                print('+' + golden_contents[golden_pos : golden_idx])
+            golden_pos = golden_idx + golden_len
 
-        if actual_pos < actual_idx:
-            print('@@ {0},{1} @@'.format(actual_pos, actual_idx - actual_pos))
-            print('-' + actual_contents[actual_pos : actual_idx])
-        actual_pos = actual_idx + actual_len
+            if actual_pos < actual_idx:
+                print('@@ {0},{1} @@'.format(actual_pos, actual_idx - actual_pos))
+                print('-' + actual_contents[actual_pos : actual_idx])
+            actual_pos = actual_idx + actual_len
 
-        curr += 1
+            curr += 1
 
     # Test the JSON file.
     subprocess.call(args.test_driver + ' ' + golden_bin_file + ' ' + actual_json_file, shell=True)
-    # diffs = difflib.unified_diff([line.rstrip('\n') for line in open(golden_json_file)],
-    #                               [line.rstrip('\n') for line in open(actual_json_file)],
-    #                               fromfile=golden_json_file,
-    #                               tofile=actual_json_file,
-    #                               lineterm='',
-    #                               n=0)
-    # for diff in diffs:
-    #     failed = True
-    #     print diff
+    if not os.path.exists(actual_json_file):
+        failed = True
+        print('Missing file: {0}'.format(actual_json_file))
+    else:
+        diffs = difflib.unified_diff([line.rstrip('\n') for line in open(golden_json_file)],
+                                      [line.rstrip('\n') for line in open(actual_json_file)],
+                                      fromfile=golden_json_file,
+                                      tofile=actual_json_file,
+                                      lineterm='',
+                                      n=0)
+        for diff in diffs:
+            failed = True
+            print diff
 
     print('{0}: {1}'.format(test.rjust(max), 'FAIL' if failed else 'PASS'))
